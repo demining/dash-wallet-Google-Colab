@@ -1,1 +1,1 @@
-tcp:electrum.dash.siampm.com
+tls:electrum.dash.siampm.com
