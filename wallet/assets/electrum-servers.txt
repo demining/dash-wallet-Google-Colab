@@ -1,1 +1,1 @@
-tls:electrum.dash.siampm.com
+tls:electrum.dash.siampm.com::f0f5a14ed0ae8cd41f09c2fecb289efe1a3b35e6d10925a12fa812fe83d275a1
