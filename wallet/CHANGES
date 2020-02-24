@@ -1,4 +1,8 @@
 Dash Wallet
+v6.6.6
+* Update checkpoints
+* Add DNS seeder for testnet
+
 v6.6.5
 * Use DashJ 0.16.5
 * Addresses send delays and failures
