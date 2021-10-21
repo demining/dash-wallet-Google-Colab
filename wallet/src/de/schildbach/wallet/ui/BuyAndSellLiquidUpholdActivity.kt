@@ -32,7 +32,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import de.schildbach.wallet.Constants
 import de.schildbach.wallet.WalletApplication
-import de.schildbach.wallet.dialog.CurrencyDialog
+import de.schildbach.wallet.dialog.FiatCurrencySearchDialog
 import de.schildbach.wallet.rates.ExchangeRatesViewModel
 import de.schildbach.wallet_test.R
 import kotlinx.android.synthetic.main.activity_buy_and_sell_liquid_uphold.*
@@ -53,8 +53,7 @@ import org.dash.wallet.integration.liquid.currency.CurrencyResponse
 import org.dash.wallet.integration.liquid.currency.PayloadItem
 import org.dash.wallet.integration.liquid.data.LiquidClient
 import org.dash.wallet.integration.liquid.data.LiquidUnauthorizedException
-import org.dash.wallet.integration.liquid.listener.CurrencySelectListener
-import org.dash.wallet.integration.liquid.ui.LiquidBuyAndSellDashActivity
+import org.dash.wallet.integration.liquid.ui.LiquidPortalActivity
 import org.dash.wallet.integration.liquid.ui.LiquidSplashActivity
 import org.dash.wallet.integration.liquid.ui.LiquidViewModel
 import org.dash.wallet.integration.uphold.currencyModel.UpholdCurrencyResponse
@@ -63,7 +62,6 @@ import org.dash.wallet.integration.uphold.ui.UpholdAccountActivity
 import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.math.BigDecimal
 
 class BuyAndSellLiquidUpholdActivity : LockScreenActivity() {
 
@@ -132,7 +130,7 @@ class BuyAndSellLiquidUpholdActivity : LockScreenActivity() {
             }, bundleOf())
 
             startActivityForResult(
-                LiquidBuyAndSellDashActivity.createIntent(this),
+                LiquidPortalActivity.createIntent(this),
                 USER_BUY_SELL_DASH
             )
         }
@@ -418,11 +416,8 @@ class BuyAndSellLiquidUpholdActivity : LockScreenActivity() {
      * For getting liquid supported currency list
      */
     private fun getLiquidCurrencyList() {
-
         if (GenericUtils.isInternetConnected(this)) {
-
             loadingDialog!!.show()
-
             liquidClient?.getAllCurrencies(object : LiquidClient.Callback<CurrencyResponse> {
                 override fun onSuccess(data: CurrencyResponse) {
                     if (isFinishing) {
@@ -439,9 +434,7 @@ class BuyAndSellLiquidUpholdActivity : LockScreenActivity() {
                     }
                     checkAndCallApiOfUpload()
                 }
-
             })
-
         } else {
             log.error("liquid: There is no internet connection")
         }
@@ -510,29 +503,21 @@ class BuyAndSellLiquidUpholdActivity : LockScreenActivity() {
         }
     }
 
-
     /**
      * Show dialog of currency list
      */
 
     private fun showCurrenciesDialog() {
-        CurrencyDialog(
+        FiatCurrencySearchDialog(
             this,
             liquidCurrencyArrayList,
             upholdCurrencyArrayList,
-            selectedFilterCurrencyItems,
-            object : CurrencySelectListener {
-                override fun onCurrencySelected(
-                    isLiquidSelcted: Boolean,
-                    isUpholdSelected: Boolean,
-                    selectedFilterCurrencyItem: PayloadItem?
-                ) {
-                    liquid_container.visibility = if (isLiquidSelcted) View.VISIBLE else View.GONE
-                    uphold_container.visibility = if (isUpholdSelected) View.VISIBLE else View.GONE
-                    selectedFilterCurrencyItems = selectedFilterCurrencyItem
-                    setSelectedCurrency()
-                }
-            })
+            selectedFilterCurrencyItems) { isLiquidSelcted, isUpholdSelected, selectedFilterCurrencyItem ->
+                liquid_container.visibility = if (isLiquidSelcted) View.VISIBLE else View.GONE
+                uphold_container.visibility = if (isUpholdSelected) View.VISIBLE else View.GONE
+                selectedFilterCurrencyItems = selectedFilterCurrencyItem
+                setSelectedCurrency()
+            }.create()
     }
 
     /**
