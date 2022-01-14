@@ -22,17 +22,18 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
 import com.google.firebase.database.ktx.getValue
+import com.google.firebase.ktx.BuildConfig
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.lang.Exception
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 interface ExploreRepository {
+    suspend fun exist(tableName: String): Boolean
     suspend fun getLastUpdate(): Long
     suspend fun getLastUpdate(tableName: String): Long
     suspend fun getDataSize(tableName: String): Int
@@ -52,7 +53,10 @@ class FirebaseExploreDatabase @Inject constructor() : ExploreRepository {
     }
 
     private val auth = Firebase.auth
-    private val fbDatabase = Firebase.database
+    private val fbDatabase = if (BuildConfig.DEBUG)
+        FirebaseDatabase.getInstance("https://dash-wallet-firebase.firebaseio.com")
+    else
+        FirebaseDatabase.getInstance("https://dash-wallet-firebase-dev.firebaseio.com")
 
     override suspend fun <T> get(
         tableName: String,
@@ -106,6 +110,31 @@ class FirebaseExploreDatabase @Inject constructor() : ExploreRepository {
                     if (coroutine.isActive) {
                         try {
                             coroutine.resume(dataSnapshot.getValue<Int>()!!)
+                        } catch (ex: Exception) {
+                            coroutine.resumeWithException(ex)
+                        }
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    if (coroutine.isActive) {
+                        coroutine.resumeWithException(error.toException())
+                    }
+                }
+            })
+        }
+    }
+
+    override suspend fun exist(tableName: String): Boolean {
+        ensureAuthenticated()
+        val query = fbDatabase.getReference("explore/$tableName")
+
+        return suspendCancellableCoroutine { coroutine ->
+            query.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    if (coroutine.isActive) {
+                        try {
+                            coroutine.resume(dataSnapshot.value != null)
                         } catch (ex: Exception) {
                             coroutine.resumeWithException(ex)
                         }

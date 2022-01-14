@@ -113,6 +113,13 @@ class ExploreSyncWorker constructor(val appContext: Context, workerParams: Worke
         dao: BaseDao<T>
     ): Boolean {
         return try {
+
+            val tableExist = exploreRepository.exist(tableName)
+            if (!tableExist) {
+                log.warn("Remote table $tableName doesn't exist")
+                return true
+            }
+
             val prefsLastSyncKey = "${PREFS_LAST_SYNC_KEY}_$tableName"
             val lastSync = preferences.getLong(prefsLastSyncKey, 0)
             val lastDataUpdate = exploreRepository.getLastUpdate(tableName)
